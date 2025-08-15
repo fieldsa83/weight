@@ -12,7 +12,7 @@ for (pkg in required_packages) {
 df_full <- read_csv("df_full.csv")
 df_full_avg <- read_csv("df_full_avg.csv")
 
-plot_ly(height=500,width=750) %>%
+p <- plot_ly(height=500,width=750) %>%
   # 1. Add the first trace for Average Weight (visible by default)
   add_trace(data = df_full_avg, x = ~Date, y = ~Avg_weight,
             type = "scatter", mode = "lines", name = "Monthly average") %>%
@@ -73,3 +73,5 @@ plot_ly(height=500,width=750) %>%
     )
   ) %>% 
   config(displayModeBar = F)
+
+saveWidget(p, file = "index.html", selfcontained = TRUE)
