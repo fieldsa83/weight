@@ -17,6 +17,7 @@ weight_data_historic <- readxl::read_excel("weighttest.xlsx") %>%
 google_app <- oauth_app("google",
                         key = Sys.getenv("API_KEY"),  
                         secret = Sys.getenv("SECRET_KEY")
+                        )
 
 google_token <- oauth2.0_token(oauth_endpoints("google"), google_app,
                                scope = "https://www.googleapis.com/auth/fitness.body.read")
