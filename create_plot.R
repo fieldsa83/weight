@@ -1,5 +1,5 @@
 # List of packages to install and load
-required_packages <- c("dplyr", "readr", "plotly")
+required_packages <- c("dplyr", "readr", "htmlwidgets", "plotly")
 
 # Install missing packages and load all of them
 for (pkg in required_packages) {
