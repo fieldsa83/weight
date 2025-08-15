@@ -74,4 +74,10 @@ p <- plot_ly(height=500,width=750) %>%
   ) %>% 
   config(displayModeBar = F)
 
-saveWidget(p, file = "index.html", selfcontained = TRUE)
+
+# 1. Create the 'docs' directory if it doesn't exist.
+# This is the folder the GitHub Action looks for.
+if (!dir.exists("docs")) dir.create("docs")
+
+# 2. Save the plot object as a single, self-contained HTML file.
+saveWidget(p, file = "docs/index.html", selfcontained = TRUE)
