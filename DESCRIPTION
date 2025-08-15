@@ -3,4 +3,5 @@ Version: 1.0
 Imports: 
     dplyr,
     readr,
+    htmlwidgets,
     plotly
