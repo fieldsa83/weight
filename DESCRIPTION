@@ -1,7 +1,5 @@
 Package: weight
 Version: 1.0
 Imports: 
-    tidyverse,
-    zoo,
-    plotly,
-    httr
+    dplyr,
+    plotly
