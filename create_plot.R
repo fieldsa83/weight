@@ -8,9 +8,9 @@ for (pkg in required_packages) {
 }
 
 # # Read each sheet by its name
-df_full_loaded <- read_excel("weight_data.xlsx", sheet = "Full_Data")
-df_full_avg_month_loaded <- read_excel("weight_data.xlsx", sheet = "Monthly_Avg")
-df_full_avg_week_loaded <- read_excel("weight_data.xlsx", sheet = "Weekly_Avg")
+df_full <- read_excel("weight_data.xlsx", sheet = "Full_Data")
+df_full_avg_month <- read_excel("weight_data.xlsx", sheet = "Monthly_Avg")
+df_full_avg_week <- read_excel("weight_data.xlsx", sheet = "Weekly_Avg")
 
 
 p <- 
