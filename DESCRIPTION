@@ -4,7 +4,12 @@ Imports:
     dplyr,
     readr,
     readxl,
+    dt,
     htmlwidgets,
     plotly,
     httr,
-    httpuv
+    httpuv,
+    gargle,
+    httr,
+    jsonlite,
+    base64enc
