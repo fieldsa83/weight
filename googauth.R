@@ -60,9 +60,9 @@ if (nrow(weight_data_google) > 0) {
   )
   
   # Save the widget as a self-contained HTML file
-  saveWidget(interactive_table, file = "index2.html", selfcontained = TRUE)
+  saveWidget(interactive_table, file = "docs/index2.html", selfcontained = TRUE)
   
-  print("Successfully saved data to index.html")
+  print("Successfully saved data to docs/index2.html")
   
 } else {
   print("No new weight data to save.")
