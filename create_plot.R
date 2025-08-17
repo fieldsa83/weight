@@ -13,8 +13,7 @@ df_full_avg_month <- read_excel("weight_data.xlsx", sheet = "Monthly_Avg")
 df_full_avg_week <- read_excel("weight_data.xlsx", sheet = "Weekly_Avg")
 
 
-p <- 
-plot_ly(height=500,width=750) %>%
+p <- plot_ly(height=500,width=750) %>%
   # 1. Add the first trace for Average monthly Weight (visible by default)
   add_trace(data = df_full_avg_month, x = ~Date, y = ~Avg_weight,
             type = "scatter", mode = "lines", name = "Monthly average") %>%
@@ -91,6 +90,7 @@ plot_ly(height=500,width=750) %>%
     )
   ) %>% 
   config(displayModeBar = F)
+
 
 
 # 1. Create the 'docs' directory if it doesn't exist.
