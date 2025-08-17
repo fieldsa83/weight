@@ -51,7 +51,7 @@ plot_ly(height=500,width=750) %>%
       title = list(text = "Month", standoff = 15),
       rangeslider = list(visible = TRUE, thickness = 0.08),
       # Use the larger dataset for the max range to ensure it covers both
-      range = c("2019-01-01", as.character(max(df_full$Date)+10))
+      range = c("2019-01-01", as.character(max(df_full$Date)+20))
     ),
     yaxis = list(
       title = list(text = "lbs", standoff = 10), 
