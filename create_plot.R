@@ -1,19 +1,89 @@
-# List of packages to install and load
-required_packages <- c("dplyr", "readr", "readxl", "htmlwidgets", "plotly")
+library(dplyr)
+library(readr)
+library(readxl)
+library(htmlwidgets)
+library(plotly)
+library(gargle)
+library(httr)
+library(jsonlite)
+library(base64enc)
 
-# Install missing packages and load all of them
-for (pkg in required_packages) {
-  if (!require(pkg, character.only = TRUE)) install.packages(pkg)
-  library(pkg, character.only = TRUE)
+
+### Google auth
+token_b64 <- Sys.getenv("GOOGLE_FITNESS_TOKEN")
+token_rds <- base64enc::base64decode(token_b64)
+writeBin(token_rds, token_path)
+
+google_token <- httr::config(token = readRDS(token_path))
+
+
+get_weight <- function(days_back = 3000, token) {
+  
+  # Time range in nanoseconds
+  end_ns <- as.numeric(Sys.time()) * 1e9
+  start_ns <- as.numeric(Sys.time() - days_back * 24 * 3600) * 1e9
+  
+  # API call
+  url <- paste0("https://www.googleapis.com/fitness/v1/users/me/dataSources/derived:com.google.weight:com.google.android.gms:merge_weight/datasets/", start_ns, "-", end_ns)
+  
+  # The httr::GET call uses the token object correctly here
+  response <- GET(url, config = token)
+  data <- fromJSON(content(response, "text"))
+  
+  # Convert to dataframe
+  if (length(data$point) > 0) {
+    df <- data.frame(
+      Date = as.Date(as.POSIXct(as.numeric(data$point$startTimeNanos) / 1e9, origin = "1970-01-01")),
+      weight_lb = sapply(data$point$value, function(x) x$fpVal)*2.20462
+    )
+    return(df)
+  } else {
+    return(data.frame(Date = as.Date(character(0)), weight_lb = numeric(0)))
+  }
 }
+### End google auth
 
-# # Read each sheet by its name
-df_full <- read_excel("weight_data.xlsx", sheet = "Full_Data")
-df_full_avg_month <- read_excel("weight_data.xlsx", sheet = "Monthly_Avg")
-df_full_avg_week <- read_excel("weight_data.xlsx", sheet = "Weekly_Avg")
+# ---  Get and Print Your Data ---
+weight_data_google <- get_weight(6000, google_token)
 
 
-p <- plot_ly(height=500,width=750) %>%
+weight_data <- weight_data_google
+
+      
+# 2. Prepare the data
+# Convert the 'Date' column to a Date object
+# Create a full sequence of dates from the start to the end date
+all_dates <- data.frame(Date = seq(as.Date(min(weight_data$Date)), as.Date(max(weight_data$Date)), by = "day"))
+
+# 3. Merge and Interpolate
+# Join the original data with the complete list of dates
+df_full <- all_dates %>%
+  left_join(weight_data, by = "Date") %>%
+  # Use na.approx() from the zoo library for linear interpolation
+  mutate(Weight = na.approx(weight_lb)) %>%
+  # Round the interpolated weights to one decimal place
+  mutate(Weight = round(Weight, 1))
+
+df_full_avg_month <- df_full %>%
+  mutate(
+    Year=year(as.Date(Date)),
+    Month=month(as.Date(Date))
+  ) %>% 
+  group_by(Year,Month) %>% 
+  summarise(Avg_weight=mean(Weight)) %>% 
+  mutate(Date=as.Date(sprintf("%d-%02d-01", Year, Month))) %>% 
+  ungroup() %>%
+  arrange(Date)
+
+
+df_full_avg_week <- df_full %>%
+  group_by(Date = floor_date(as.Date(Date), unit = "week")) %>%
+  summarise(Avg_weight = mean(Weight)) %>%
+  arrange(Date)
+
+
+
+P <- plot_ly(height=500,width=750) %>%
   # 1. Add the first trace for Average monthly Weight (visible by default)
   add_trace(data = df_full_avg_month, x = ~Date, y = ~Avg_weight,
             type = "scatter", mode = "lines", name = "Monthly average") %>%
@@ -50,7 +120,7 @@ p <- plot_ly(height=500,width=750) %>%
       title = list(text = "Month", standoff = 15),
       rangeslider = list(visible = TRUE, thickness = 0.08),
       # Use the larger dataset for the max range to ensure it covers both
-      range = c("2019-01-01", as.character(max(df_full_avg_week$Date)+14))
+      range = c("2019-01-01", as.character(max(df_full_avg_week$Date)+7))
     ),
     yaxis = list(
       title = list(text = "lbs", standoff = 10), 
