@@ -16,7 +16,7 @@ library(plotly)
 library(htmlwidgets)
 
 # Historic csv
-weight_data_historic <- readxl::read_excel("weight_data.xlsx") %>% 
+weight_data_historic <- readxl::read_excel("weight_historic.xlsx") %>% 
   rename(Date = DATE,
          weight_lb=Weight) %>% 
   mutate(Date = as.Date(Date, format = "%d/%m/%Y"))
