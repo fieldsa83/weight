@@ -10,10 +10,26 @@ library(base64enc)
 
 
 ### Google auth
-token_b64 <- Sys.getenv("GOOGLE_FITNESS_TOKEN")
-token_rds <- base64enc::base64decode(token_b64)
-writeBin(token_rds, token_path)
+token_path <- "google_fitness_token.rds" # The name of your local token file
 
+# Check if the script is running in GitHub Actions and the secret is available
+if (Sys.getenv("GOOGLE_FITNESS_TOKEN") != "") {
+  
+  cat("Authentication: Using GOOGLE_FITNESS_TOKEN secret.\n")
+  # If it is, decode the Base64 secret and write it to a temporary file
+  token_b64 <- Sys.getenv("GOOGLE_FITNESS_TOKEN")
+  token_rds <- base64enc::base64decode(token_b64)
+  writeBin(token_rds, token_path)
+  
+} else {
+  cat("Authentication: Using local .rds file.\n")
+}
+
+# Ensure the token file exists (either the local one or the one from the secret)
+stopifnot(file.exists(token_path))
+
+# Create the final token object for the httr request.
+# Your function expects this object.
 google_token <- httr::config(token = readRDS(token_path))
 
 
