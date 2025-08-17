@@ -2,8 +2,8 @@
 #-------------------------------------------------------------------------------
 # Data manipulation and I/O
 library(dplyr)
-library(zoo)        # <-- ADDED: Required for na.approx() for interpolation
-library(lubridate)  # <-- ADDED: Required for year(), month(), and floor_date()
+library(zoo)        
+library(lubridate)  
 
 # Google API and web
 library(gargle)
@@ -15,11 +15,6 @@ library(base64enc)
 library(plotly)
 library(htmlwidgets)
 
-# Historic csv
-weight_data_historic <- readxl::read_excel("weight_historic.xlsx") %>% 
-  rename(Date = DATE,
-         weight_lb=Weight) %>% 
-  mutate(Date = as.Date(Date, format = "%d/%m/%Y"))
 
 
 # 2. CONFIGURATION: SETTINGS & PARAMETERS
@@ -79,6 +74,13 @@ get_weight <- function(days_back, token) {
 weight_data_google <- get_weight(DAYS_TO_FETCH, google_token)
 
 
+# Historic csv
+weight_data_historic <- readxl::read_excel("weight_historic.xlsx") %>% 
+  rename(Date = DATE,
+         weight_lb=Weight) %>% 
+  mutate(Date = as.Date(Date, format = "%d/%m/%Y"))
+
+# Combine historic and google API data
 weight_data <- rbind(weight_data_historic, weight_data_google) %>%
   # Sort by date to make sure we keep the correct entry if there are duplicates
   arrange(Date) %>%
@@ -86,17 +88,12 @@ weight_data <- rbind(weight_data_historic, weight_data_google) %>%
   distinct(Date, .keep_all = TRUE)
 
 
-
-
-
-
-
-# 2. Prepare the data
+# Prepare the data
 # Convert the 'Date' column to a Date object
 # Create a full sequence of dates from the start to the end date
 all_dates <- data.frame(Date = seq(as.Date(min(weight_data$Date)), as.Date(max(weight_data$Date)), by = "day"))
 
-# 3. Merge and Interpolate
+# Merge and Interpolate
 # Join the original data with the complete list of dates
 df_full <- all_dates %>%
   left_join(weight_data, by = "Date") %>%
@@ -122,6 +119,9 @@ df_full_avg_week <- df_full %>%
   summarise(Avg_weight = mean(Weight)) %>%
   arrange(Date)
 
+
+      
+### Create plot
 p <- plot_ly(height=500,width=750) %>%
   # 1. Add the first trace for Average monthly Weight (visible by default)
   add_trace(data = df_full_avg_month, x = ~Date, y = ~Avg_weight,
