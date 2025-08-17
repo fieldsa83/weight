@@ -2,7 +2,7 @@ name: Update Daily Chart
 
 on:
   schedule:
-    - cron: '0 14 * * *' # Runs daily at 8:00 UTC (10am est)
+    - cron: '0 14 * * *' # Runs daily at 2:00 PM UTC (adjust as needed)
   workflow_dispatch:
 
 jobs:
@@ -25,16 +25,22 @@ jobs:
 
       - name: Install dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
+        # IMPORTANT: Make sure DT, htmlwidgets, gargle, httr, etc.,
+        # are listed in your DESCRIPTION file so they get installed.
 
       - name: Run R script
         env:
+          # Your old secrets (if still needed)
           API_KEY: ${{ secrets.API_KEY }}
           API_SECRET: ${{ secrets.API_SECRET }}
-        run: Rscript create_plot.R # Make sure this matches your R script's filename
+          # The new secret for Google Fitness
+          GOOGLE_FITNESS_TOKEN: ${{ secrets.GOOGLE_FITNESS_TOKEN }} # <-- ADD THIS
+        run: Rscript create_plot.R # This should be your combined R script
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          # This will now correctly find and upload your generated HTML
           path: './docs'
 
       - name: Deploy to GitHub Pages
