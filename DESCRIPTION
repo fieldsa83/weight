@@ -3,5 +3,8 @@ Version: 1.0
 Imports: 
     dplyr,
     readr,
+    readxl,
     htmlwidgets,
-    plotly
+    plotly,
+    httr,
+    httpuv
