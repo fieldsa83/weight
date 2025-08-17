@@ -13,4 +13,5 @@ Imports:
     httr,
     jsonlite,
     base64enc,
-    zoo
+    zoo,
+    lubridate
