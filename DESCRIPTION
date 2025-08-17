@@ -12,4 +12,5 @@ Imports:
     gargle,
     httr,
     jsonlite,
-    base64enc
+    base64enc,
+    zoo
