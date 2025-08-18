@@ -16,7 +16,7 @@ library(plotly)
 library(htmlwidgets)
 
 # disable file caching in the temporary environment
-options(gargle_oauth_cache = FALSE)
+options(gargle_oauth_cache = ".gargle-oauth")
 
 
 # 2. CONFIGURATION: SETTINGS & PARAMETERS
