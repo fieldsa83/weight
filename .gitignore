@@ -1,0 +1,4 @@
+# .gitignore
+
+# Ignore the gargle token cache
+.gargle-oauth
