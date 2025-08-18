@@ -15,6 +15,8 @@ library(base64enc)
 library(plotly)
 library(htmlwidgets)
 
+# disable file caching in the temporary environment
+options(gargle_oauth_cache = FALSE)
 
 
 # 2. CONFIGURATION: SETTINGS & PARAMETERS
