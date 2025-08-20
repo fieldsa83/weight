@@ -205,6 +205,6 @@ p <- plot_ly(height=500,width=750) %>%
 # 7. OUTPUT: SAVE PLOT TO HTML
 #-------------------------------------------------------------------------------
 if (!dir.exists("docs")) dir.create("docs")
-saveWidget(p, file = "docs/index.html", selfcontained = TRUE)
+saveWidget(p, file = "docs/index.html", selfcontained = TRUE, title = "Weights")
 
 cat("Script finished. Interactive plot saved to docs/index.html\n")
