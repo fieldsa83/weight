@@ -65,14 +65,14 @@ p <- plot_ly(height=500,width=750) %>%
       showgrid = F, 
       title = list(text = "Month", standoff = 15),
       # This sets the initial ZOOMED IN view to the last year
-      range = c("2019-01-01", as.character(max(df_full$Date)+7)),
+      range = c("2019-01-01", as.character(max(df_full$Date)+14)),
       
       # UPDATED: This explicitly sets the range of the SLIDER itself
       rangeslider = list(
         visible = TRUE, 
         thickness = 0.08,
         # Force the slider's range to match your data exactly
-        range = c(as.character(min(df_full$Date)), as.character(max(df_full$Date)+7)) 
+        range = c(as.character(min(df_full$Date)), as.character(max(df_full$Date)+14)) 
       )
     ),
     yaxis = list(
