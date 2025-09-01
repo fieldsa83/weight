@@ -1,133 +1,36 @@
-# 1. SETUP: LOAD LIBRARIES
-#-------------------------------------------------------------------------------
-# Data manipulation and I/O
 library(dplyr)
-library(zoo)        
-library(lubridate)  
-
-# Google API and web
-library(gargle)
-library(httr)
-library(jsonlite)
-library(base64enc)
-
-# Plotting and output
 library(plotly)
 library(htmlwidgets)
+library(readxl)
 
-# disable file caching in the temporary environment
-options(gargle_oauth_cache = ".gargle-oauth")
+# Define the path to your Excel file
+file_path <- "weight_data.xlsx" # Or whatever you named it
 
-
-# 2. CONFIGURATION: SETTINGS & PARAMETERS
-#-------------------------------------------------------------------------------
-TARGET_WEIGHT <- 135  # Target weight in lbs
-DAYS_TO_FETCH <- 6000 # How many days of data to pull from the API
-
-
-# 3. AUTHENTICATION: GOOGLE API
-#-------------------------------------------------------------------------------
-token_path <- "google_fitness_token.rds"
-
-if (Sys.getenv("GOOGLE_FITNESS_TOKEN") != "") {
-  cat("Authentication: Using GOOGLE_FITNESS_TOKEN secret.\n")
-  token_b64 <- Sys.getenv("GOOGLE_FITNESS_TOKEN")
-  token_rds <- base64enc::base64decode(token_b64)
-  writeBin(token_rds, token_path)
-} else {
-  cat("Authentication: Using local .rds file.\n")
-}
-
-stopifnot(file.exists(token_path))
-google_token <- httr::config(token = readRDS(token_path))
+# Read each sheet by its name into a separate data frame
+df_full <- read_excel(file_path, sheet = "Full_Data")
+df_full_avg_month <- read_excel(file_path, sheet = "Monthly_Avg")
+df_full_avg_week <- read_excel(file_path, sheet = "Weekly_Avg")
 
 
-# 4. DATA FETCHING: GOOGLE FIT API FUNCTION
-#-------------------------------------------------------------------------------
-get_weight <- function(days_back, token) {
-  end_ns <- as.numeric(Sys.time()) * 1e9
-  start_ns <- as.numeric(Sys.time() - days_back * 24 * 3600) * 1e9
-  
-  url <- paste0("https://www.googleapis.com/fitness/v1/users/me/dataSources/derived:com.google.weight:com.google.android.gms:merge_weight/datasets/", start_ns, "-", end_ns)
-  
-  response <- GET(url, config = token)
-  
-  if (status_code(response) != 200) {
-    stop("Google Fit API request failed. Status: ", status_code(response))
-  }
-  
-  data <- fromJSON(content(response, "text", encoding = "UTF-8"))
-  
-  if (length(data$point) > 0) {
-    df <- data.frame(
-      Date = as.Date(as.POSIXct(as.numeric(data$point$startTimeNanos) / 1e9, origin = "1970-01-01")),
-      weight_lb = sapply(data$point$value, function(x) x$fpVal) * 2.20462
-    )
-    return(df)
-  } else {
-    return(data.frame(Date = as.Date(character(0)), weight_lb = numeric(0)))
-  }
-}
-
-
-# 5. DATA PREPARATION: INTERPOLATE & AGGREGATE
-#-------------------------------------------------------------------------------
-# Fetch raw data from the API
-weight_data_google <- get_weight(DAYS_TO_FETCH, google_token)
-
-
-# Historic csv
-weight_data_historic <- readxl::read_excel("weight_historic.xlsx") %>% 
-  rename(Date = DATE,
-         weight_lb=Weight) %>% 
-  mutate(Date = as.Date(Date, format = "%d/%m/%Y"))
-
-# Combine historic and google API data
-weight_data <- rbind(weight_data_historic, weight_data_google) %>%
-  # Sort by date to make sure we keep the correct entry if there are duplicates
-  arrange(Date) %>%
-  # Keep only the unique rows based on the Date column
-  distinct(Date, .keep_all = TRUE)
-
-
-# Prepare the data
-# Convert the 'Date' column to a Date object
-# Create a full sequence of dates from the start to the end date
-all_dates <- data.frame(Date = seq(as.Date(min(weight_data$Date)), as.Date(max(weight_data$Date)), by = "day"))
-
-# Merge and Interpolate
-# Join the original data with the complete list of dates
-df_full <- all_dates %>%
-  left_join(weight_data, by = "Date") %>%
-  # Use na.approx() from the zoo library for linear interpolation
-  mutate(Weight = na.approx(weight_lb)) %>%
-  # Round the interpolated weights to one decimal place
-  mutate(Weight = round(Weight, 1))
-
-df_full_avg_month <- df_full %>%
-  mutate(
-    Year=year(as.Date(Date)),
-    Month=month(as.Date(Date))
-  ) %>% 
-  group_by(Year,Month) %>% 
-  summarise(Avg_weight=mean(Weight)) %>% 
-  mutate(Date=as.Date(sprintf("%d-%02d-01", Year, Month))) %>% 
-  ungroup() %>%
-  arrange(Date)
-
-
-df_full_avg_week <- df_full %>%
-  group_by(Date = floor_date(as.Date(Date), unit = "week")) %>%
-  summarise(Avg_weight = mean(Weight)) %>%
-  arrange(Date)
-
-
-      
-### Create plot
 p <- plot_ly(height=500,width=750) %>%
+  # Trace 0: Marker trace (background) - will always be visible
+  add_trace(data = df_full, x = ~Date, y = ~weight_lb, 
+            type = "scatter", 
+            mode = 'markers', 
+            name = "Daily Reading",
+            showlegend=F,
+            # Updated marker list to include a border (line)
+            marker = list(size = 5, 
+                          color = '#9ecae1',
+                          line = list(
+                            color = '#1f77b4', # Border color
+                            width = .8         # Border width
+                          )), 
+            opacity=0.6) %>% 
+  
   # 1. Add the first trace for Average monthly Weight (visible by default)
   add_trace(data = df_full_avg_month, x = ~Date, y = ~Avg_weight,
-            type = "scatter", mode = "lines", name = "Monthly average") %>%
+            type = "scatter", mode = "lines", name = "Monthly average", line = list(color = '#1f77b4')) %>%
   
   # 2a. Add the second trace for weekly Weight (initially invisible)
   add_trace(data = df_full_avg_week, x = ~Date, y = ~Avg_weight,
@@ -150,6 +53,8 @@ p <- plot_ly(height=500,width=750) %>%
             name = "Target Weight", mode = "lines",
             line = list(color = 'darkred', dash = 'dot'))   %>% 
   
+
+  
   # 4. Define the layout and the dropdown menu
   layout(
     title = list(
@@ -159,9 +64,16 @@ p <- plot_ly(height=500,width=750) %>%
     xaxis = list(
       showgrid = F, 
       title = list(text = "Month", standoff = 15),
-      rangeslider = list(visible = TRUE, thickness = 0.08),
-      # Use the larger dataset for the max range to ensure it covers both
-      range = c("2019-01-01", as.character(max(df_full_avg_week$Date)+7))
+      # This sets the initial ZOOMED IN view to the last year
+      range = c("2019-01-01", as.character(max(df_full$Date)+7)),
+      
+      # UPDATED: This explicitly sets the range of the SLIDER itself
+      rangeslider = list(
+        visible = TRUE, 
+        thickness = 0.08,
+        # Force the slider's range to match your data exactly
+        range = c(as.character(min(df_full$Date)), as.character(max(df_full$Date)+7)) 
+      )
     ),
     yaxis = list(
       title = list(text = "lbs", standoff = 10), 
@@ -179,28 +91,29 @@ p <- plot_ly(height=500,width=750) %>%
         active = 0, # The first button is selected by default
         buttons = list(
           
+          # Button to show Monthly View (Trace 1)
           list(method = "restyle",
-               # This makes the 1st trace TRUE (visible) and 2nd FALSE (hidden)
-               args = list(list(visible = c(TRUE, FALSE, FALSE)), c(0, 1, 2)),
+               # Sets visibility for traces 1, 2, and 3
+               args = list(list(visible = c(TRUE, FALSE, FALSE)), c(1, 2, 3)),
                label = "Monthly View"),
           
-          
+          # Button to show Weekly View (Trace 2)
           list(method = "restyle",
-               # This makes the 1st trace FALSE (hidden) and 2nd TRUE (visible)
-               args = list(list(visible = c(FALSE, TRUE, FALSE)), c(0, 1, 2)),
+               # Sets visibility for traces 1, 2, and 3
+               args = list(list(visible = c(FALSE, TRUE, FALSE)), c(1, 2, 3)),
                label = "Weekly View"),
           
+          # Button to show Daily View (Trace 3)
           list(method = "restyle",
-               # This makes the 1st trace FALSE (hidden) and 2nd TRUE (visible)
-               args = list(list(visible = c(FALSE, FALSE, TRUE)), c(0, 1, 2)),
+               # Sets visibility for traces 1, 2, and 3
+               args = list(list(visible = c(FALSE, FALSE, TRUE)), c(1, 2, 3)),
                label = "Daily View")
-
-
         )
       )
     )
   ) %>% 
   config(displayModeBar = F)
+
 
 # 7. OUTPUT: SAVE PLOT TO HTML
 #-------------------------------------------------------------------------------
