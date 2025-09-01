@@ -2,16 +2,7 @@ Package: weight
 Version: 1.0
 Imports: 
     dplyr,
-    readr,
     readxl,
-    DT,
     htmlwidgets,
     plotly,
-    httr,
-    httpuv,
-    gargle,
-    httr,
-    jsonlite,
-    base64enc,
-    zoo,
-    lubridate
+    readxl
